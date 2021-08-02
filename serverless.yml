@@ -1,0 +1,93 @@
+service: Almacen
+frameworkVersion: '2'
+
+
+provider:
+  name: aws
+  runtime: dotnetcore3.1
+  lambdaHashingVersion: 20201221
+  stage: ${opt:stage, 'dev'}
+  region: eu-west-3
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan 
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource: "arn:aws:dynamodb:eu-west-3:479881415233:table/Almacen-dev-AlmacenTable-20PIIR3XFKM1"
+  endpointType: REGIONAL
+  apiName: apiAlmacen-${self:provider.stage}
+  apiKeys:
+    - apiKeyAlmacen
+  usagePlan:
+    quota:
+      limit: 1000
+      offset: 0
+      period: DAY
+    throttle:
+      burstLimit: 200
+      rateLimit: 100
+
+package:
+  artifact: deploy-package.zip
+
+functions:
+  get:
+    handler: CsharpHandlers::AwsDotnetCsharp.Handler::GetItem
+    events:
+     - http:
+        path: Almacen
+        method: get
+        private: true
+     - http:
+         path: Almacen/{id}
+         method: get
+         private: true
+
+  post:
+    handler: CsharpHandlers::AwsDotnetCsharp.Handler::PostItem
+    events:
+      - http:
+         path: Almacen
+         method: post
+         private: true
+
+  Put:
+    handler: CsharpHandlers::AwsDotnetCsharp.Handler::PutItem
+    events:
+      - http:
+         path: Almacen
+         method: put
+         private: true
+
+  delete:
+    handler: CsharpHandlers::AwsDotnetCsharp.Handler::DeleteItem
+    events:
+      - http:
+         path: Almacen
+         method: delete
+         private: true
+        
+resources:
+  Resources: 
+    AlmacenTable: 
+      Type: AWS::DynamoDB::Table
+      Properties: 
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
+        AttributeDefinitions: 
+          - AttributeName: "Articulo"
+            AttributeType: "S"
+          - AttributeName: "Version"
+            AttributeType: "N"
+        KeySchema: 
+          - AttributeName: "Articulo"
+            KeyType: "HASH"
+          - AttributeName: "Version"
+            KeyType: "RANGE"
+
+
